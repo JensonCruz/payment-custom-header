@@ -47,7 +47,7 @@ public class SignatureGenerator implements Execution {
             signatureString.append("digest: ").append(digestHeader).append("\n");
             signatureString.append("v-c-merchant-id: ").append(merchantId);
 
-            // Generate HMAC signature
+            // Generate HMAC signature using MessageDigest
             String signature = generateHMACSHA256Signature(sharedKey, signatureString.toString());
             String signatureHeader = "keyid=\"" + merchantKeyId + "\", algorithm=\"HmacSHA256\", headers=\"host date request-target digest v-c-merchant-id\", signature=\"" + signature + "\"";
 
@@ -70,12 +70,17 @@ public class SignatureGenerator implements Execution {
 
     private String generateHMACSHA256Signature(String sharedKey, String validationString)
             throws NoSuchAlgorithmException, InvalidKeyException {
+        // Decode the shared key
         byte[] keyBytes = Base64.getDecoder().decode(sharedKey);
-        SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
 
-        Mac mac = Mac.getInstance("HmacSHA256");
-        mac.init(secretKeySpec);
-        byte[] hmacSha256Bytes = mac.doFinal(validationString.getBytes(StandardCharsets.UTF_8));
+        // Create an instance of MessageDigest
+        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+
+        // Update the digest with the key
+        messageDigest.update(keyBytes);
+
+        // Update the digest with the validation string
+        byte[] hmacSha256Bytes = messageDigest.digest(validationString.getBytes(StandardCharsets.UTF_8));
 
         return Base64.getEncoder().encodeToString(hmacSha256Bytes);
     }
