@@ -11,6 +11,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.format.DateTimeFormatter;
 import java.time.ZonedDateTime;
@@ -70,18 +71,14 @@ public class SignatureGenerator implements Execution {
 
     private String generateHMACSHA256Signature(String sharedKey, String validationString)
             throws NoSuchAlgorithmException, InvalidKeyException {
-        // Decode the shared key
         byte[] keyBytes = Base64.getDecoder().decode(sharedKey);
+        SecretKey originalKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "HmacSHA256");
+//        SecretKeySpec secretKeySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
 
-        // Create an instance of MessageDigest
-        MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-
-        // Update the digest with the key
-        messageDigest.update(keyBytes);
-
-        // Update the digest with the validation string
-        byte[] hmacSha256Bytes = messageDigest.digest(validationString.getBytes(StandardCharsets.UTF_8));
-
-        return Base64.getEncoder().encodeToString(hmacSha256Bytes);
+        Mac hmacSha256 = Mac.getInstance("HmacSHA256");
+        hmacSha256.init(originalKey);
+        hmacSha256.update(validationString.getBytes());
+        byte[] HmachSha256DigestBytes = hmacSha256.doFinal();
+        return Base64.getEncoder().encodeToString(HmachSha256DigestBytes);
     }
 }
